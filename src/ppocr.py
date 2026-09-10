@@ -33,15 +33,12 @@ class Ocr:
         
         # classify raw data
         for info in raw_info:
-            path.append(info.input_path)
-            text_context.append(info.rec_texts)
-        
-        # merge into a dict
-        dict = dict(zip(path, text_context))
-        
+            path.append(info["input_path"])
+            text_context.append(info["rec_texts"])
+
         # merge values with the same key
         merged = defaultdict(list)
-        for k, v in dict:
+        for k, v in zip(path, text_context):
             merged[k].append(v)
             
         return merged

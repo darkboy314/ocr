@@ -30,7 +30,7 @@ def find_files_by_name_keyword(root_dir, keyword, extensions=None) -> list:
 def main() -> None:
     root_dir = "./"
     output_dir = "./output"
-    keyword = "Maintenance Report"
+    keyword = "test"
     extensions = [".pdf"]
     
     # Find Files
@@ -43,12 +43,14 @@ def main() -> None:
     # Extract info from raw data
     extract = ocr.extract_info(raw)
     
-    # Translate content from CN(Canton) to EN
+    # Translate content from CN(Cantonese) to EN
     canton = cantoeng.Canton("en")
-    for path, pages in extract:
-        for p in pages:
-            p["rec_texts"] = canton.start_translate(p["rec_texts"])
+    for _, pages in extract.items():
+        for index, page in enumerate(pages):
+            pages[index] = canton.start_translate(page)
+            print(pages[index])
     
+    # export to file
     with open("output.json", "w", encoding="utf-8") as f:
         json.dumps(extract, f, ensure_ascii=False, indent=2)
         
