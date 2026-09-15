@@ -1,9 +1,5 @@
 import json
 import os
-import pandas as pd
-from ocr import ppocr
-from ocr import textprocess
-from ocr import cantoeng
 
 
 def find_files_by_name_keyword(root_dir, keyword, extensions=None) -> list:
@@ -24,29 +20,28 @@ def find_files_by_name_keyword(root_dir, keyword, extensions=None) -> list:
                 if ext.lower() not in extensions:
                     continue
 
-            if keyword in name:  # 如需忽略大小写可统一 .lower()
+            if keyword.casefold() in name.casefold():
                 matched.append(os.path.join(dirpath, name))
     return matched
 
 
-def main() -> None:
-    root_dir = "./"
-    current_path = os.getcwd()
-    print(current_path)
+def process_files(root_dir: str, output_dir: str, keyword: str, extensions: list[str]) -> int:
+    """Run OCR and export the extracted information for matching files."""
+    import pandas as pd
 
-    output_dir = "./output"
-    keyword = "test"
-    extensions = [".pdf"]
-    
-    # Find Files
+    from ocr import ppocr, textprocess
+
     files = find_files_by_name_keyword(root_dir, keyword, extensions)
-    # files = ["input/test1.pdf", "input/test2.pdf"]
-    
-    # OCR scan files
+    if not files:
+        raise FileNotFoundError("没有找到符合条件的文件")
+
     ocr = ppocr.Ocr()
-    raw = ocr.start_ocr(files, isfileoutputenable=True)
-    
-    # Extract info from raw data
+    raw = ocr.start_ocr(
+        files,
+        isfileoutputenable=True,
+        output_dir=output_dir,
+    )
+
     process = textprocess.TextProcess()
     extract = process.process_info(raw)
     context_data = process.extract_info_from_data(extract)
@@ -59,19 +54,17 @@ def main() -> None:
         "maintenance_costs", "total_costs",
     ]
     
-    # Translate content from CN(Cantonese) to EN
-    # canton = cantoeng.Canton("en")
-    # for _, pages in extract.items():
-    #     for index, page in enumerate(pages):
-    #         pages[index] = canton.start_translate(page)
-    #         print(pages[index])
-    
-    # export to file
+    os.makedirs(output_dir, exist_ok=True)
     pd.DataFrame(context_data, columns=column_names).to_csv(
         os.path.join(output_dir, "result.csv"), index=False
     )
-        
-    return
+    return len(files)
+
+
+def main() -> None:
+    from ocr.gui import OcrGui
+
+    OcrGui().run()
 
 if __name__ == "__main__":
     main()

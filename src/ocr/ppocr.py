@@ -1,4 +1,6 @@
-from paddleocr import PaddleOCR 
+import os
+
+from paddleocr import PaddleOCR
 
 
 class Ocr:
@@ -12,16 +14,22 @@ class Ocr:
         return
 
 
-    def start_ocr(self, filename:str, isfileoutputenable:bool):
+    def start_ocr(
+        self,
+        filename: str,
+        isfileoutputenable: bool,
+        output_dir: str = "output",
+    ):
         pipeline = self.pipeline
         result = pipeline.predict(filename)
         
         # if file output is enable, then output image and json file
         if isfileoutputenable:
+            os.makedirs(output_dir, exist_ok=True)
             for res in result:
                 res.print()
-                res.save_to_img("output")
-                res.save_to_json("output")
+                res.save_to_img(output_dir)
+                res.save_to_json(output_dir)
         
         return result
 
