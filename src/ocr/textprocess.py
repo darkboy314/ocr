@@ -5,7 +5,7 @@ from collections import defaultdict
 # example_path = "./AT0484_Wang Fai Motors/Operation Data/M01/AT0484 - 06 - Form E2 - Maintenance Report (EV)_YX1161_M01_Dec2023.pdf"
 
 class TextProcess:
-    def process_info(self, raw_info:list) -> dict:
+    def concat_raw_ocr(self, raw_info:list) -> dict:
         path = []
         text_context = []
         
@@ -21,13 +21,7 @@ class TextProcess:
             
         return merged
 
-
-    def extract_info_from_data_test(self, raw_info:dict) -> list:
-        
-        pass
-
-
-    def extract_info_from_data(self, raw_info:dict) -> list:
+    def extract_from_raw_ocr(self, raw_info:dict) -> list:
         agree_numbers = []
         recipients = []
         veh_reg_numbers = []
@@ -159,7 +153,7 @@ class TextProcess:
                         accident_causes, maintenance_lists, maintenance_costs, total_costs))
 
 
-    def extract_info_from_path(self, raw_info:dict) -> list:
+    def extract_from_path(self, raw_info:dict) -> list:
         codes = []
         companies = []
         types = []
@@ -186,4 +180,12 @@ class TextProcess:
         zipped = zip(codes, companies, types, car_numbers, dates)
         return list(zipped)
 
+
+    def extract_from_html(self, raw_info:dict) -> list:
+        html_contents = []
+        for context in raw_info.values():
+            for page in context:
+                if page.get("block_label") == "table":
+                    html_contents.append(page.get("block_content", ""))
+        return html_contents
 

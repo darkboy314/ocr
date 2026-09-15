@@ -36,6 +36,7 @@ class Ocr:
         
         return result
 
+
     def start_struct_ocr(
         self,
         filename: str,

@@ -36,9 +36,15 @@ def process_files(root_dir: str, output_dir: str, keyword: str, extensions: list
         raise FileNotFoundError("没有找到符合条件的文件")
 
     ocr = ppocr.Ocr()
-    raw = ocr.start_ocr(
+    # raw = ocr.start_ocr(
+    #     files,
+    #     isfileoutputenabled=True,
+    #     output_dir=output_dir,
+    # )
+    
+    raw = ocr.start_struct_ocr(
         files,
-        isfileoutputenable=True,
+        isfileoutputenabled=True,
         output_dir=output_dir,
     )
 
@@ -62,9 +68,16 @@ def process_files(root_dir: str, output_dir: str, keyword: str, extensions: list
 
 
 def main() -> None:
-    from ocr.gui import OcrGui
+    process_files(
+        root_dir="input",
+        output_dir="output",
+        keyword="",
+        extensions=[".jpg", ".jpeg", ".png", ".pdf"],
+    )
 
-    OcrGui().run()
+    # from ocr.gui import OcrGui
+
+    # OcrGui().run()
 
 if __name__ == "__main__":
     main()
