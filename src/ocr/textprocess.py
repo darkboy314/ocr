@@ -86,6 +86,51 @@ def _table_rows(content: str) -> list[list[str]]:
     ]
 
 
+def _is_field_label(value: str) -> bool:
+    labels = (
+        "資助協議編號", "受資助者名稱", "車牌號碼", "車輛型號", "服務路線",
+        "維修時里程表讀數", "維修公司名稱", "維修日期和時間", "停運時間/小時",
+        "維修類型", "事故發生日期及時間", "事故地點", "事故原因",
+        "Subsidy Agreement No.", "Subsidy recipient name", "Vehicle Registration No.",
+        "Vehicle model", "Service route", "Odometer reading at maintenance/km", 
+        "Maintenance company name", "Maintenance date & time", "Operation down time/hour",
+        "Maintenance type", "Date & time", 
+        "Location, course of the incident and countermeasures taken",
+        "Cause of incident"
+    )
+    return any(label in value for label in labels)
+
+
+def _ocr_fallback_value(data: dict, field_label: str) -> str:
+    for ocr_result in data.get("_overall_ocr_results", []):
+        texts = _value(ocr_result, "rec_texts", [])
+        if not isinstance(texts, list):
+            continue
+        for index, text in enumerate(texts):
+            if field_label not in str(text):
+                continue
+            candidates = []
+            for candidate in texts[index + 1:]:
+                candidate = str(candidate).strip()
+                if not candidate or _is_field_label(candidate):
+                    continue
+                if candidate.casefold() in {"maintenance company", "name"}:
+                    continue
+                candidates.append(candidate)
+                if len(candidates) == 1:
+                    return candidates[0]
+    return ""
+
+
+def _split_maintenance_datetime(value: str) -> tuple[str, str]:
+    cleaned = re.sub(r"由|至|from|to", " ", value, flags=re.IGNORECASE)
+    parts = cleaned.split()
+    return (parts[0], parts[1]) if len(parts) >= 2 else (
+        parts[0] if parts else "",
+        "",
+    )
+
+
 def extract_fields_from_ppstructure(data: dict) -> dict[str, str | list[str]]:
     """Extract one document row from a PP-Structure result dictionary.
 
@@ -147,8 +192,17 @@ def extract_fields_from_ppstructure(data: dict) -> dict[str, str | list[str]]:
                     value = suffix[1].strip()
                 elif len(suffix) == 1 and index + 1 < len(cells):
                     value = cells[index + 1]
+                if _is_field_label(value):
+                    value = _ocr_fallback_value(data, label_patterns[0])
                 break
         values[name] = value
+
+    maintenance_from, maintenance_to = _split_maintenance_datetime(
+        str(values.get("maintenance_datetime", ""))
+    )
+    values["maintenance_from"] = maintenance_from
+    values["maintenance_to"] = maintenance_to
+    values.pop("maintenance_datetime", None)
 
     item_start = next(
         (index for index, cell in enumerate(cells) if "維修項目" in cell or "maintenance item" in cell.casefold()),
@@ -211,9 +265,16 @@ def extract_documents(results: list[dict]) -> list[dict[str, str | list[str]]]:
     for result in results:
         path = str(_value(result, "input_path", ""))
         if path not in grouped:
-            grouped[path] = {"input_path": path, "parsing_res_list": []}
+            grouped[path] = {
+                "input_path": path,
+                "parsing_res_list": [],
+                "_overall_ocr_results": [],
+            }
         blocks = _value(result, "parsing_res_list", [])
         if not isinstance(blocks, list):
             raise TypeError("parsing_res_list must be a list")
         grouped[path]["parsing_res_list"].extend(blocks)
+        overall_ocr = _value(result, "overall_ocr_res", None)
+        if overall_ocr is not None:
+            grouped[path]["_overall_ocr_results"].append(overall_ocr)
     return [extract_fields_from_ppstructure(data) for data in grouped.values()]

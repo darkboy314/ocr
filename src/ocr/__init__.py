@@ -13,7 +13,8 @@ def _csv_columns() -> list[str]:
         "service_route",
         "odometer_reading",
         "maintenance_company",
-        "maintenance_datetime",
+        "maintenance_from",
+        "maintenance_to",
         "downtime_hours",
         "maintenance_type",
         "accident_datetime",
@@ -39,7 +40,8 @@ def _csv_row(record: dict) -> dict[str, str]:
         "service_route",
         "odometer_reading",
         "maintenance_company",
-        "maintenance_datetime",
+        "maintenance_from",
+        "maintenance_to",
         "downtime_hours",
         "maintenance_type",
         "accident_datetime",
@@ -119,10 +121,10 @@ def process_files(root_dir: str, output_dir: str, keyword: str, extensions: list
 
 def main() -> None:
     process_files(
-        root_dir="input",
+        root_dir="../Final_Algorithm",
         output_dir="output",
-        keyword="",
-        extensions=[".jpg", ".jpeg", ".png", ".pdf"],
+        keyword="Maintenance Report",
+        extensions=[".pdf"],
     )
 
     # from ocr.gui import OcrGui

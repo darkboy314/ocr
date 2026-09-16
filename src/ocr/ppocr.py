@@ -5,7 +5,12 @@ from paddleocr import PPStructureV3
 class Ocr:
     def __init__(self):
         self.struct_pipeline = PPStructureV3(
-            paddlex_config="PP-StructureV3.yaml" # 配置文件
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            text_detection_model_name="PP-OCRv6_medium_det",
+            text_recognition_model_name="PP-OCRv6_medium_rec",
+            device="gpu",
         )
         return
 
