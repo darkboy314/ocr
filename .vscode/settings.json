@@ -1,3 +1,4 @@
 {
-    "dependi.python.lockFileEnabled": false
+    "dependi.python.lockFileEnabled": false,
+    "python.analysis.autoImportCompletions": true
 }

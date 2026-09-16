@@ -1,5 +1,63 @@
-import json
+import csv
 import os
+
+
+def _csv_columns() -> list[str]:
+    columns = [
+        "input_path",
+        "report_month",
+        "agreement_number",
+        "recipient_name",
+        "vehicle_registration_number",
+        "vehicle_model",
+        "service_route",
+        "odometer_reading",
+        "maintenance_company",
+        "maintenance_datetime",
+        "downtime_hours",
+        "maintenance_type",
+        "accident_datetime",
+        "accident_details",
+        "accident_cause",
+    ]
+    columns.extend(f"maintenance_{index}" for index in range(1, 21))
+    columns.extend(f"maintenance_category_{index}" for index in range(1, 21))
+    columns.extend(f"maintenance_cost_{index}" for index in range(1, 21))
+    columns.append("total_cost")
+    return columns
+
+
+def _csv_row(record: dict) -> dict[str, str]:
+    row = {column: "" for column in _csv_columns()}
+    for column in (
+        "input_path",
+        "report_month",
+        "agreement_number",
+        "recipient_name",
+        "vehicle_registration_number",
+        "vehicle_model",
+        "service_route",
+        "odometer_reading",
+        "maintenance_company",
+        "maintenance_datetime",
+        "downtime_hours",
+        "maintenance_type",
+        "accident_datetime",
+        "accident_details",
+        "accident_cause",
+        "total_cost",
+    ):
+        row[column] = str(record.get(column, ""))
+    for prefix, source in (
+        ("maintenance", "maintenance_items"),
+        ("maintenance_category", "maintenance_categories"),
+        ("maintenance_cost", "maintenance_costs"),
+    ):
+        values = record.get(source, [])
+        if isinstance(values, list):
+            for index, value in enumerate(values[:20], start=1):
+                row[f"{prefix}_{index}"] = str(value)
+    return row
 
 
 def find_files_by_name_keyword(root_dir, keyword, extensions=None) -> list:
@@ -27,8 +85,6 @@ def find_files_by_name_keyword(root_dir, keyword, extensions=None) -> list:
 
 def process_files(root_dir: str, output_dir: str, keyword: str, extensions: list[str]) -> int:
     """Run OCR and export the extracted information for matching files."""
-    import pandas as pd
-
     from ocr import ppocr, textprocess
 
     files = find_files_by_name_keyword(root_dir, keyword, extensions)
@@ -42,28 +98,22 @@ def process_files(root_dir: str, output_dir: str, keyword: str, extensions: list
     #     output_dir=output_dir,
     # )
     
-    raw = ocr.start_struct_ocr(
+    raw = ocr.start_ocr(
         files,
-        isfileoutputenabled=True,
         output_dir=output_dir,
+        save_image=True,
+        save_json=True,
+        save_markdown=True,
     )
 
-    process = textprocess.TextProcess()
-    extract = process.process_info(raw)
-    context_data = process.extract_info_from_data(extract)
-    column_names = [
-        "agree_numbers", "recipients", "veh_reg_numbers", "veh_models",
-        "service_routes", "meter_readings", "maintenance_companies",
-        "maintenance_dates_from", "maintenance_dates_to", "down_times",
-        "maintenance_types", "reasons", "accident_dates", "accident_locations",
-        "accident_descriptions", "accident_causes", "maintenance_lists",
-        "maintenance_costs", "total_costs",
-    ]
-    
+    records = textprocess.extract_documents(list(raw))
     os.makedirs(output_dir, exist_ok=True)
-    pd.DataFrame(context_data, columns=column_names).to_csv(
-        os.path.join(output_dir, "result.csv"), index=False
-    )
+    csv_path = os.path.join(output_dir, "result.csv")
+    with open(csv_path, "w", newline="", encoding="utf-8") as csv_file:
+        columns = _csv_columns()
+        writer = csv.DictWriter(csv_file, fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(_csv_row(record) for record in records)
     return len(files)
 
 
