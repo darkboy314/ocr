@@ -1,3 +1,4 @@
+import os
 import re
 from html.parser import HTMLParser
 from collections.abc import Mapping
@@ -168,18 +169,21 @@ def extract_fields_from_ppstructure(data: dict) -> dict[str, str | list[str]]:
     table_contents = [_table_cells(content) for content in table_blocks]
     cells = [cell for table in table_contents for cell in table]
     labels = (
-        ("agreement_number", ("資助協議編號",)),
-        ("recipient_name", ("受資助者名稱",)),
-        ("vehicle_registration_number", ("車牌號碼",)),
-        ("vehicle_model", ("車輛型號",)),
+        ("agreement_no", ("資助協議編號",)),
+        ("company", ("受資助者名稱",)),
+        ("license_plate", ("車牌號碼",)),
+        ("model", ("車輛型號",)),
         ("service_route", ("服務路線",)),
         ("odometer_reading", ("維修時里程表讀數/公里", "Odometer reading at")),
         ("maintenance_company", ("維修公司名稱",)),
         ("maintenance_datetime", ("維修日期和時間",)),
-        ("downtime_hours", ("停運時間/小時",)),
-        ("maintenance_type", ("維修類型",)),
+        ("main_downtime", ("停運時間/小時",)),
+        ("total_main_type", ("維修類型",)),
         ("accident_datetime", ("事故發生日期及時間",)),
-        ("accident_details", ("事故地點、經過及當時採取嘅對應措施",)),
+        (
+            "accident_details",
+            ("事故地點、經過及當時採取的對應措施", "事故地點、經過及當時採取嘅對應措施"),
+        ),
         ("accident_cause", ("事故原因",)),
     )
     values: dict[str, str | list[str]] = {"report_month": report_month}
@@ -200,8 +204,8 @@ def extract_fields_from_ppstructure(data: dict) -> dict[str, str | list[str]]:
     maintenance_from, maintenance_to = _split_maintenance_datetime(
         str(values.get("maintenance_datetime", ""))
     )
-    values["maintenance_from"] = maintenance_from
-    values["maintenance_to"] = maintenance_to
+    values["main_date_from"] = maintenance_from
+    values["main_date_to"] = maintenance_to
     values.pop("maintenance_datetime", None)
 
     item_start = next(
@@ -251,11 +255,19 @@ def extract_fields_from_ppstructure(data: dict) -> dict[str, str | list[str]]:
                 pending = []
             elif cell not in {"空"}:
                 pending.append(cell)
-    values["maintenance_items"] = item_values[:20]
-    values["maintenance_categories"] = categories[:20]
-    values["maintenance_costs"] = costs[:20]
+    values["main_descs"] = item_values[:20]
+    values["main_types"] = categories[:20]
+    values["main_costs"] = costs[:20]
     values["total_cost"] = cells[total_index + 1] if total_index < len(cells) - 1 else ""
-    values["input_path"] = str(_value(data, "input_path", ""))
+    input_path = str(_value(data, "input_path", ""))
+    filename = os.path.basename(input_path).upper()
+    values["input_path"] = input_path
+    if "(EV)" in filename:
+        values["veh_type"] = "EV"
+    elif "(CV)" in filename:
+        values["veh_type"] = "CV"
+    else:
+        values["veh_type"] = ""
     return values
 
 
