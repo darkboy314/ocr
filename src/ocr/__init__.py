@@ -82,28 +82,21 @@ def find_files_by_name_keyword(root_dir, include) -> list[str]:
 
 def process_files(root_dir: str, output_dir: str, keyword: str) -> int:
     """Run OCR and export the extracted information for matching files."""
-    from ocr import ppocr, textprocess
+    from ocr import ppocr, table
 
     files = find_files_by_name_keyword(root_dir, keyword)
     if not files:
         raise FileNotFoundError("没有找到符合条件的文件")
 
     ocr = ppocr.Ocr()
-    # raw = ocr.start_ocr(
-    #     files,
-    #     isfileoutputenabled=True,
-    #     output_dir=output_dir,
-    # )
-    
     raw = ocr.start_ocr(
         files,
         output_dir=output_dir,
         save_image=True,
         save_json=True,
-        save_markdown=True,
     )
 
-    records = textprocess.extract_documents(list(raw))
+    records = table.extract_documents(list(raw))
     os.makedirs(output_dir, exist_ok=True)
     csv_path = os.path.join(output_dir, "result.csv")
     with open(csv_path, "w", newline="", encoding="utf-8") as csv_file:
