@@ -1,9 +1,9 @@
-import ocr
-import preprocess
+import ocr, preprocess, report
+
 
 def main() -> None:
     # preprocessing
-    preprocess.pipeline.main()
+    preprocess.run_pipeline()
     
     # start processing file
     ocr.process_files(
@@ -11,6 +11,8 @@ def main() -> None:
         output_dir="output",
         keyword=r"^(?!.*CS).*Maintenance Report.*\.pdf$", # 正则表达式，筛选Maintenance Report但是不包含充电桩的Report
     )
+    
+    
     return
 
 if __name__ == "__main__":
