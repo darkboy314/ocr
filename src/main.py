@@ -12,7 +12,7 @@ def main() -> None:
         keyword=r"^(?!.*CS).*Maintenance Report.*\.pdf$", # 正则表达式，筛选Maintenance Report但是不包含充电桩的Report
     )
     
-    
+    report.generate_maintenance_report()
     return
 
 if __name__ == "__main__":

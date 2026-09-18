@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "docxtpl>=0.20.2",
+    "ipykernel>=7.3.0",
+    "openpyxl>=3.1.5",
     "paddleocr>=3.7.0",
     "paddlepaddle-gpu==3.3.1",
     "rapidfuzz>=3.14.6",

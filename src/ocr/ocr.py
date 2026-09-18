@@ -1,8 +1,10 @@
 import csv
 import os
 import re
+from collections.abc import Collection
 from pathlib import Path
-from . import pp, table, gui
+
+from . import pp, table
 
 
 def _csv_columns() -> list[str]:
@@ -68,23 +70,34 @@ def _csv_row(record: dict) -> dict[str, str]:
     return row
 
 
-def find_files_by_name_keyword(root_dir, include) -> list[str]:
-    """
-    使用正则表达式递归查找文件名。
-    """
+def find_files_by_name_keyword(
+    root_dir: str,
+    include: str,
+    extensions: Collection[str] | None = None,
+) -> list[str]:
+    """Recursively find files whose names match ``include`` and extensions."""
     pattern = re.compile(include, re.IGNORECASE)
+    normalized_extensions = (
+        {extension.casefold() for extension in extensions} if extensions else None
+    )
     return [
         str(path)
         for path in Path(root_dir).rglob("*")
         if path.is_file()
         and pattern.search(path.name)
+        and (normalized_extensions is None or path.suffix.casefold() in normalized_extensions)
     ]
 
 
-def process_files(root_dir: str, output_dir: str, keyword: str) -> int:
+def process_files(
+    root_dir: str,
+    output_dir: str,
+    keyword: str,
+    extensions: Collection[str] | None = None,
+) -> int:
     """Run OCR and export the extracted information for matching files."""
 
-    files = find_files_by_name_keyword(root_dir, keyword)
+    files = find_files_by_name_keyword(root_dir, keyword, extensions)
     if not files:
         raise FileNotFoundError("没有找到符合条件的文件")
 
